@@ -31,9 +31,8 @@ public class RLModelTester {
 
     // --- Model input/output names (UPDATED from saved_model_cli's internal tensor names) ---
     // These are the 'name:' fields from your saved_model_cli output for the serving_default signature
-    private static final String INPUT_TENSOR_NAME = "inputs";
-    private static final String OUTPUT_ACTOR_LOGITS_NAME = "output_0"; // Corresponds to 'output_0'
-    // private static final String OUTPUT_CRITIC_VALUE_NAME = "StatefulPartitionedCall:1"; // Corresponds to 'output_1'
+    private static final String INPUT_TENSOR_NAME = "serving_default_inputs:0"; // Updated based on saved_model_cli
+    private static final String OUTPUT_ACTOR_LOGITS_NAME = "StatefulPartitionedCall:0"; // Updated based on saved_model_cli    // private static final String OUTPUT_CRITIC_VALUE_NAME = "StatefulPartitionedCall:1"; // Corresponds to 'output_1'
 
 
     private static void initializeActionMap() {
