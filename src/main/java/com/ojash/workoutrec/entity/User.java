@@ -27,4 +27,8 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    // Added relationship: One user can have many workouts
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Workout> workouts = new ArrayList<>();
 }
