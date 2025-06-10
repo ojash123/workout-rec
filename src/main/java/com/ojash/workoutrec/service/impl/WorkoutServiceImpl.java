@@ -2,6 +2,7 @@
 package com.ojash.workoutrec.service.impl;
 
 import com.ojash.workoutrec.dto.SetDto;
+import com.ojash.workoutrec.dto.ExerciseSubmissionDto;
 import com.ojash.workoutrec.entity.*;
 import com.ojash.workoutrec.repository.*;
 import com.ojash.workoutrec.service.WorkoutService;
@@ -69,5 +70,21 @@ public class WorkoutServiceImpl implements WorkoutService {
         // 'targetReps' would likely come from the recommendation step
 
         performedSetRepo.save(performedSet);
+    }
+
+    @Override
+    @Transactional
+    public void recordExercisePerformance(ExerciseSubmissionDto submissionDto) {
+        PerformedExercise performedExercise = performedExerciseRepo.findById(submissionDto.getPerformedExerciseId())
+                .orElseThrow(() -> new RuntimeException("Performed Exercise not found with ID: " + submissionDto.getPerformedExerciseId()));
+
+        for (ExerciseSubmissionDto.SetData setData : submissionDto.getSets()) {
+            PerformedSet performedSet = new PerformedSet();
+            performedSet.setPerformedExercise(performedExercise);
+            performedSet.setSetNumber(setData.getSetNumber());
+            performedSet.setActualReps(setData.getActualReps());
+            performedSet.setWeightUsed(setData.getWeightUsed());
+            performedSetRepo.save(performedSet);
+        }
     }
 }

@@ -48,7 +48,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         initializeActionMap();
         try {
             // Assumes model is in src/main/resources/, using the model saved with TF 2.12
-            Path modelPath = Paths.get(new ClassPathResource("rl_workout_saved_model_tf212").getURI());
+            Path modelPath = Paths.get(new ClassPathResource("rl_workout_saved_model").getURI());
             this.savedModelBundle = SavedModelBundle.load(modelPath.toString(), "serve");
             System.out.println("TensorFlow SavedModel loaded successfully for service!");
         } catch (IOException e) {
