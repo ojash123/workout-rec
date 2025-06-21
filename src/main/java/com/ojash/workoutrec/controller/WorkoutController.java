@@ -48,10 +48,13 @@ public class WorkoutController {
             return ResponseEntity.ok(newWorkout);
         }
 
-        @GetMapping("/recommendation")
-        public ResponseEntity<RecommendationDto> getNextRecommendation(@RequestParam(defaultValue = "1") int daysSinceLastWorkout) {
-            Long currentUserId = 1L; // Placeholder - enhance later
-            RecommendationDto recommendation = recommendationService.getRecommendation(currentUserId, daysSinceLastWorkout);
+        @GetMapping("/{workoutId}/recommendation")
+        public ResponseEntity<RecommendationDto> getNextRecommendation(
+                @PathVariable Long workoutId,
+                @RequestParam(defaultValue = "1") int daysSinceLastWorkout) {
+
+            // We pass the workoutId to the service
+            RecommendationDto recommendation = recommendationService.getRecommendation(workoutId, daysSinceLastWorkout);
             return ResponseEntity.ok(recommendation);
         }
 

@@ -26,8 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Fetch the next recommendation from the API
     async function fetchNextRecommendation() {
+        if (!currentWorkoutId) {
+            alert('Cannot get recommendation without an active workout.');
+            return;
+        }
         try {
-            const response = await fetch('/api/workout/recommendation');
+            // UPDATED: Pass the currentWorkoutId in the URL
+            const response = await fetch(`/api/workout/${currentWorkoutId}/recommendation`);
             if (!response.ok) throw new Error('Failed to get recommendation');
 
             const recommendation = await response.json();
@@ -37,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Could not get next recommendation.');
         }
     }
+
 
     // 3. Display the recommendation in a new card
     function displayRecommendation(rec) {

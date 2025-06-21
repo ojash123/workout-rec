@@ -2,11 +2,12 @@
 package com.ojash.workoutrec.service.impl;
 
 import com.ojash.workoutrec.dto.RecommendationDto;
+import com.ojash.workoutrec.entity.Workout;
+import com.ojash.workoutrec.repository.WorkoutRepo;
 import com.ojash.workoutrec.service.RecommendationService;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import org.springframework.core.io.ClassPathResource;
+// REMOVE jakarta.annotation.PostConstruct and jakarta.annotation.PreDestroy
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.tensorflow.Result;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
@@ -17,16 +18,13 @@ import org.tensorflow.ndarray.buffer.DataBuffers;
 import org.tensorflow.ndarray.index.Indices;
 import org.tensorflow.types.TFloat32;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class RecommendationServiceImpl implements RecommendationService {
 
-    // --- Model Configuration (adapted from RLModelTester) ---
+    // --- Model Configuration ---
     private static final int NUM_EXERCISES = 10;
     private static final int NUM_MUSCLE_GROUPS = 3;
     private static final int STATE_SIZE = 1 + NUM_EXERCISES * 2 + NUM_MUSCLE_GROUPS + 1; // 25
@@ -41,42 +39,52 @@ public class RecommendationServiceImpl implements RecommendationService {
             "Lat Pulldown", "Leg Press", "Bicep Curl", "Tricep Pushdown", "Leg Extension"
     };
 
-    private SavedModelBundle savedModelBundle;
-
-    @PostConstruct
-    public void loadModel() {
+    // The model is now a final field, injected by Spring
+    private final SavedModelBundle savedModelBundle;
+    private final WorkoutRepo workoutRepo; // Add WorkoutRepo to fetch workout state
+    // Use constructor injection to receive the bean
+    public RecommendationServiceImpl(SavedModelBundle savedModelBundle, WorkoutRepo workoutRepo) {
+        this.savedModelBundle = savedModelBundle;
+        this.workoutRepo = workoutRepo;
         initializeActionMap();
-        try {
-            // Assumes model is in src/main/resources/, using the model saved with TF 2.12
-            Path modelPath = Paths.get(new ClassPathResource("rl_workout_saved_model").getURI());
-            this.savedModelBundle = SavedModelBundle.load(modelPath.toString(), "serve");
-            System.out.println("TensorFlow SavedModel loaded successfully for service!");
-        } catch (IOException e) {
-            throw new RuntimeException("Could not load TensorFlow model", e);
-        }
+        System.out.println("RecommendationServiceImpl initialized with TensorFlow model.");
     }
 
-    @Override
-    public RecommendationDto getRecommendation(Long userId, int daysSinceLastWorkout) {
-        // In a real implementation, you would fetch user's history and fatigue from the DB.
-        // For now, we use a simplified, stateless approach like in RLModelTester.
-        int currentExerciseIndex = 0; // This should be tracked per workout session
-        float[][] history = new float[NUM_EXERCISES][2]; // Should be built from DB
-        float[] currentSessionFatigue = new float[NUM_MUSCLE_GROUPS]; // Should be built from current workout
+    // The @PostConstruct and @PreDestroy methods for loadModel() and closeModel() are no longer needed here.
+    // Spring manages the bean's lifecycle.
 
+    @Override
+    @Transactional(readOnly = true) // Use a transaction to lazily load exercises
+    public RecommendationDto getRecommendation(Long workoutId, int daysSinceLastWorkout) {
+        // Fetch the current workout from the database
+        Workout currentWorkout = workoutRepo.findById(workoutId)
+                .orElseThrow(() -> new RuntimeException("Workout not found with ID: " + workoutId));
+
+        // STATEFUL LOGIC: Determine the index based on exercises already performed
+        int currentExerciseIndex = currentWorkout.getPerformedExercises().size();
+
+        // Check if the workout should end based on length
+        if (currentExerciseIndex >= NUM_EXERCISES) {
+            return new RecommendationDto(null, 0, 0, true);
+        }
+
+        // (Future enhancement: Build history and fatigue from the DB based on the user)
+        float[][] history = new float[NUM_EXERCISES][2];
+        float[] currentSessionFatigue = new float[NUM_MUSCLE_GROUPS];
         float[] stateVector = constructStateVector(currentExerciseIndex, history, currentSessionFatigue, daysSinceLastWorkout);
 
-        try (Session session = savedModelBundle.session();
-             Tensor inputTensor = TFloat32.tensorOf(Shape.of(1, STATE_SIZE), DataBuffers.of(stateVector))) {
+        // Get the session from the bundle, but DO NOT put it in a try-with-resources block.
+        Session session = savedModelBundle.session();
 
+        // ONLY manage the Tensors with try-with-resources
+        try (Tensor inputTensor = TFloat32.tensorOf(Shape.of(1, STATE_SIZE), DataBuffers.of(stateVector))) {
             Result result = session.runner()
                     .feed(INPUT_TENSOR_NAME, inputTensor)
                     .fetch(OUTPUT_ACTOR_LOGITS_NAME)
                     .run();
 
-            // Corrected line: 'Tensor' is used without the <?> type parameter.
             try (Tensor resultTensor = result.get(OUTPUT_ACTOR_LOGITS_NAME)
-                    .orElseThrow(() -> new IllegalStateException("Output tensor '" + OUTPUT_ACTOR_LOGITS_NAME + "' not found."))) {
+                    .orElseThrow(() -> new IllegalStateException("Output tensor not found."))) {
 
                 FloatNdArray logitsNdArray = (TFloat32) resultTensor;
                 float[] outputLogits = new float[ACTION_DESCRIPTIONS.size()];
@@ -96,8 +104,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
     }
 
-    // --- Helper Methods from RLModelTester ---
-
+    // --- All helper methods (initializeActionMap, constructStateVector, etc.) remain the same ---
     private void initializeActionMap() {
         int minSets = 2, maxSets = 4, minReps = 6, maxReps = 15;
         for (int s = minSets; s <= maxSets; s++) {
@@ -149,13 +156,5 @@ public class RecommendationServiceImpl implements RecommendationService {
             }
         }
         return bestAction;
-    }
-
-    @PreDestroy
-    public void closeModel() {
-        if (this.savedModelBundle != null) {
-            this.savedModelBundle.close();
-            System.out.println("TensorFlow SavedModel closed.");
-        }
     }
 }

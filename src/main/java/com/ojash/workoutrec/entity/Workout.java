@@ -1,6 +1,8 @@
 // PATH: src/main/java/com/ojash/workoutrec/entity/Workout.java
 package com.ojash.workoutrec.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,11 +27,13 @@ public class Workout {
     private LocalDate date;
 
     // Relationship to User
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     // Relationship to Performed Exercises
+    @JsonManagedReference
     @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PerformedExercise> performedExercises = new ArrayList<>();
 }

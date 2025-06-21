@@ -27,17 +27,16 @@ public class SpringSecurity {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Updated CSRF configuration
-                .csrf(AbstractHttpConfigurer::disable) // <--- THIS IS THE MAIN CHANGE
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((authorize) ->
-                        authorize.requestMatchers("/register/**").permitAll()
-                                .requestMatchers("/index").permitAll()
-                                .requestMatchers("/users").hasRole("USER")
+                        authorize.requestMatchers("/register/**", "/index", "/css/**", "/js/**").permitAll() // Permit access to static resources
+                                .requestMatchers("/users").hasRole("USER") // Keep this for admin/viewing purposes if you want
+                                .requestMatchers("/workout/**", "/api/workout/**").hasRole("USER") // Secure the new workout pages and API
                 ).formLogin(
                         form -> form
                                 .loginPage("/login")
                                 .loginProcessingUrl("/login")
-                                .defaultSuccessUrl("/users")
+                                .defaultSuccessUrl("/workout", true) // Change to /workout and force redirect
                                 .permitAll()
                 ).logout(
                         logout -> logout

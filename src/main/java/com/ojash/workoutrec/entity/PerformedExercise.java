@@ -1,6 +1,8 @@
 // PATH: src/main/java/com/ojash/workoutrec/entity/PerformedExercise.java
 package com.ojash.workoutrec.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,6 +23,7 @@ public class PerformedExercise {
     private Long id;
 
     // Relationship to Workout
+    @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_id", nullable = false)
     private Workout workout;
@@ -34,6 +37,7 @@ public class PerformedExercise {
     private String notes;
 
     // Relationship to Sets
+    @JsonManagedReference
     @OneToMany(mappedBy = "performedExercise", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PerformedSet> performedSets = new ArrayList<>();
 }
