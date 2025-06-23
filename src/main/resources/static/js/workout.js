@@ -47,7 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Display the recommendation in a new card
     function displayRecommendation(rec) {
         if (rec.endWorkout) {
-            workoutLog.innerHTML += `<div class="alert alert-success">Great job! The model recommends ending the workout now.</div>`;
+            workoutLog.innerHTML += `<div class="alert alert-success">Great job! The model recommends ending the workout now. Redirecting to dashboard...</div>`;
+
+            // Redirect back to the dashboard after a short delay
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 3000); // 3-second delay
+
             return;
         }
 

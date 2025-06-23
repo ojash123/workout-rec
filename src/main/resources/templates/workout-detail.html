@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Workout Details</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" th:href="@{/dashboard}">Back to Dashboard</a>
+    <a class="nav-link" th:href="@{/logout}" style="color: white;">Logout</a>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <h2 id="workout-date">Loading workout details...</h2>
+  <div id="workout-detail-log">
+  </div>
+</div>
+
+<script th:src="@{/js/workout-detail.js}"></script>
+</body>
+</html>

@@ -29,15 +29,15 @@ public class SpringSecurity {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((authorize) ->
-                        authorize.requestMatchers("/register/**", "/index", "/css/**", "/js/**").permitAll() // Permit access to static resources
-                                .requestMatchers("/users").hasRole("USER") // Keep this for admin/viewing purposes if you want
-                                .requestMatchers("/workout/**", "/api/workout/**").hasRole("USER") // Secure the new workout pages and API
-                ).formLogin(
-                        form -> form
-                                .loginPage("/login")
-                                .loginProcessingUrl("/login")
-                                .defaultSuccessUrl("/workout", true) // Change to /workout and force redirect
-                                .permitAll()
+                        authorize.requestMatchers("/register/**", "/index", "/css/**", "/js/**").permitAll()
+                                .requestMatchers("/users").hasRole("USER")
+                                .requestMatchers("/workout/**", "/api/workout/**", "/dashboard").hasRole("USER") // Add /dashboard
+                )
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .defaultSuccessUrl("/dashboard", true) // Redirect to /dashboard
+                        .permitAll()
                 ).logout(
                         logout -> logout
                                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))

@@ -3,6 +3,8 @@ package com.ojash.workoutrec.service.impl;
 
 import com.ojash.workoutrec.dto.SetDto;
 import com.ojash.workoutrec.dto.ExerciseSubmissionDto;
+import com.ojash.workoutrec.dto.WorkoutDetailDto;
+import com.ojash.workoutrec.dto.WorkoutSummaryDto;
 import com.ojash.workoutrec.entity.*;
 import com.ojash.workoutrec.repository.*;
 import com.ojash.workoutrec.service.WorkoutService;
@@ -10,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class WorkoutServiceImpl implements WorkoutService {
@@ -86,5 +90,53 @@ public class WorkoutServiceImpl implements WorkoutService {
             performedSet.setWeightUsed(setData.getWeightUsed());
             performedSetRepo.save(performedSet);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WorkoutSummaryDto> getWorkoutHistory(String username) {
+        User user = userRepo.findByUsername(username);
+        return user.getWorkouts().stream()
+                .map(workout -> {
+                    long exerciseCount = workout.getPerformedExercises().size();
+                    long setCount = workout.getPerformedExercises().stream()
+                            .mapToLong(pe -> pe.getPerformedSets().size())
+                            .sum();
+                    return new WorkoutSummaryDto(workout.getId(), workout.getDate(), exerciseCount, setCount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WorkoutDetailDto getWorkoutDetails(Long workoutId) {
+        Workout workout = workoutRepo.findById(workoutId)
+                .orElseThrow(() -> new RuntimeException("Workout not found"));
+
+        WorkoutDetailDto dto = new WorkoutDetailDto();
+        dto.setWorkoutId(workout.getId());
+        dto.setDate(workout.getDate());
+
+        List<WorkoutDetailDto.PerformedExerciseDto> exerciseDtos = workout.getPerformedExercises().stream()
+                .map(pe -> {
+                    WorkoutDetailDto.PerformedExerciseDto peDto = new WorkoutDetailDto.PerformedExerciseDto();
+                    peDto.setExerciseName(pe.getExercise().getName());
+                    peDto.setNotes(pe.getNotes());
+
+                    List<WorkoutDetailDto.PerformedSetDto> setDtos = pe.getPerformedSets().stream()
+                            .map(ps -> {
+                                WorkoutDetailDto.PerformedSetDto psDto = new WorkoutDetailDto.PerformedSetDto();
+                                psDto.setSetNumber(ps.getSetNumber());
+                                psDto.setActualReps(ps.getActualReps());
+                                psDto.setWeightUsed(ps.getWeightUsed());
+                                return psDto;
+                            }).collect(Collectors.toList());
+
+                    peDto.setPerformedSets(setDtos);
+                    return peDto;
+                }).collect(Collectors.toList());
+
+        dto.setPerformedExercises(exerciseDtos);
+        return dto;
     }
 }
