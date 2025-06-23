@@ -31,13 +31,14 @@ public class SpringSecurity {
                 .authorizeHttpRequests((authorize) ->
                         authorize.requestMatchers("/register/**", "/index", "/css/**", "/js/**").permitAll()
                                 .requestMatchers("/users").hasRole("USER")
-                                .requestMatchers("/workout/**", "/api/workout/**", "/dashboard").hasRole("USER") // Add /dashboard
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/dashboard", true) // Redirect to /dashboard
-                        .permitAll()
+                                // MODIFIED LINE: Secure all API endpoints and user-facing pages
+                                .requestMatchers("/dashboard", "/workout/**", "/api/**").hasRole("USER")
+                ).formLogin(
+                        form -> form
+                                .loginPage("/login")
+                                .loginProcessingUrl("/login")
+                                .defaultSuccessUrl("/dashboard", true)
+                                .permitAll()
                 ).logout(
                         logout -> logout
                                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
